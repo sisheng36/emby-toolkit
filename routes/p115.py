@@ -1530,6 +1530,7 @@ logger = logging.getLogger(__name__)
 def get_local_config():
     return config_manager.APP_CONFIG
 
+# ================= 状态 & 配置 =================
 @p115_bp.route('/local_organize/status', methods=['GET'])
 @admin_required
 def local_organize_status():
@@ -1552,7 +1553,7 @@ def local_organize_status():
             }
         })
     except Exception as e:
-        logger.error(f"本地整理状态获取失败: {e}")
+        logger.error(f"获取本地整理状态失败: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
 @p115_bp.route('/local_organize/config', methods=['GET', 'POST'])
@@ -1574,22 +1575,37 @@ def local_organize_config():
             }
         })
 
+    # --- POST: 保存配置（使用 dynamic_app_config 统一存储） ---
     data = request.json or {}
     try:
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_ENABLED, data.get('enabled', False))
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MOVIE, data.get('source_movie', ''))
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_TV, data.get('source_tv', ''))
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MIXED, data.get('source_mixed', ''))
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_TARGET_BASE, data.get('target_base', ''))
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_MODE, data.get('mode', 'hardlink'))
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_AUTO_SCRAPE, data.get('auto_scrape', True))
-        settings_db.save_setting(constants.CONFIG_OPTION_LOCAL_ORGANIZE_MAX_WORKERS, data.get('max_workers', 5))
+        # 从数据库加载完整 dynamic_app_config
+        full_dynamic = settings_db.get_setting('dynamic_app_config') or {}
+
+        # 更新本地整理相关键
+        updates = {
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_ENABLED: bool(data.get('enabled', False)),
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MOVIE: str(data.get('source_movie', '')),
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_TV: str(data.get('source_tv', '')),
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MIXED: str(data.get('source_mixed', '')),
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_TARGET_BASE: str(data.get('target_base', '')),
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_MODE: str(data.get('mode', 'hardlink')),
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_AUTO_SCRAPE: bool(data.get('auto_scrape', True)),
+            constants.CONFIG_OPTION_LOCAL_ORGANIZE_MAX_WORKERS: int(data.get('max_workers', 5)),
+        }
+        full_dynamic.update(updates)
+
+        # 保存回数据库
+        settings_db.save_setting('dynamic_app_config', full_dynamic)
+
+        # 重载配置以确保内存中生效
         config_manager.load_config()
+
         return jsonify({"success": True, "message": "配置已保存"})
     except Exception as e:
         logger.error(f"保存本地整理配置失败: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+# ================= 任务触发 =================
 @p115_bp.route('/local_organize/start', methods=['POST'])
 @admin_required
 def local_organize_trigger():
@@ -1622,6 +1638,7 @@ def local_organize_monitor_stop():
         logger.error(f"停止监控失败: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
+# ================= 整理记录 =================
 @p115_bp.route('/local_organize/records', methods=['GET'])
 @admin_required
 def local_organize_records():
