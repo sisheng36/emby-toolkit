@@ -87,7 +87,7 @@ watch(() => props.show, async (val) => {
 
 async function loadConfig() {
   try {
-    const res = await axios.get('/api/local_organize/config')
+    const res = await axios.get('/api/p115/local_organize/config')
     if (res.data.success) {
       Object.assign(form, res.data.data)
     }
@@ -99,7 +99,7 @@ async function loadConfig() {
 async function saveConfig() {
   saving.value = true
   try {
-    const res = await axios.post('/api/local_organize/config', form)
+    const res = await axios.post('/api/p115/local_organize/config', form)
     if (res.data.success) {
       window.$message.success('配置已保存')
       emit('saved')
