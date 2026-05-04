@@ -45,15 +45,15 @@ CONFIG_OPTION_MONITOR_SHA1_PC_SEARCH = "monitor_sha1_pc_search"
 # ==============================================================================
 # ✨ 本地文件整理配置 (Local Organize) - 
 # ==============================================================================
-CONFIG_SECTION_LOCAL_ORGANIZE = "LocalOrganize"
-CONFIG_OPTION_LOCAL_ORGANIZE_ENABLED = "local_organize_enabled"
-CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MOVIE = "local_organize_source_movie"
-CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_TV = "local_organize_source_tv"
-CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MIXED = "local_organize_source_mixed"
-CONFIG_OPTION_LOCAL_ORGANIZE_TARGET_BASE = "local_organize_target_base"
-CONFIG_OPTION_LOCAL_ORGANIZE_MODE = "local_organize_mode"
-CONFIG_OPTION_LOCAL_ORGANIZE_AUTO_SCRAPE = "local_organize_auto_scrape"
-CONFIG_OPTION_LOCAL_ORGANIZE_MAX_WORKERS = "local_organize_max_workers" 
+# ---- 本地文件整理模块配置常量 ----
+CONFIG_OPTION_LOCAL_ORGANIZE_ENABLED = 'local_organize_enabled'
+CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MOVIE = 'local_organize_source_movie'
+CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_TV = 'local_organize_source_tv'
+CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MIXED = 'local_organize_source_mixed'
+CONFIG_OPTION_LOCAL_ORGANIZE_TARGET_BASE = 'local_organize_target_base'
+CONFIG_OPTION_LOCAL_ORGANIZE_MODE = 'local_organize_mode'
+CONFIG_OPTION_LOCAL_ORGANIZE_AUTO_SCRAPE = 'local_organize_auto_scrape'
+CONFIG_OPTION_LOCAL_ORGANIZE_MAX_WORKERS = 'local_organize_max_workers'
 
 # ==============================================================================
 # ✨ 115 网盘配置 (115 Cloud Drive) 
