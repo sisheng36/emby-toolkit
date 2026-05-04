@@ -76,6 +76,19 @@ def _identify_media(file_path: str, folder_name: str = None) -> Tuple[Optional[s
         tmdb_id = _extract_tmdb_id(grandparent_name)
     
     if tmdb_id:
+    # 即使有 ID，也要获取标题，否则后续重命名会误用原文件名
+    try:
+        api_key = config_manager.APP_CONFIG.get(constants.CONFIG_OPTION_TMDB_API_KEY)
+        if api_key:
+            media = tmdb_handler.get_media_details(tmdb_id, api_key)
+            if media:
+                media_type = media.get('media_type', 'movie')
+                title = media.get('title') or media.get('name')
+                return tmdb_id, media_type, title
+        # 如果 API 不可用，降级返回（但无法得到 title）
+        return tmdb_id, None, None
+    except Exception as e:
+        logger.warning(f"TMDb 查询 {tmdb_id} 失败: {e}")
         return tmdb_id, None, None
     
     season_num, episode_num, media_type = _parse_video_filename(file_name)
