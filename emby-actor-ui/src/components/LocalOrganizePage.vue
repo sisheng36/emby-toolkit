@@ -126,7 +126,7 @@ async function fetchRecords() {
     if (searchQuery.value) params.search = searchQuery.value
     if (statusFilter.value !== 'all') params.status = statusFilter.value
     
-    const res = await axios.get('/api/local_organize/records', { params })
+    const res = await axios.get('/api/p115/local_organize/records', { params })
     if (res.data.success) {
       records.value = res.data.items || []
       stats.total = res.data.total
@@ -141,7 +141,7 @@ async function fetchRecords() {
 
 async function fetchStatus() {
   try {
-    const res = await axios.get('/api/local_organize/status')
+    const res = await axios.get('/api/p115/local_organize/status')
     if (res.data.success) {
       monitorRunning.value = res.data.data?.monitor_running || false
     }
@@ -153,7 +153,7 @@ async function fetchStatus() {
 async function startOrganize() {
   organizing.value = true
   try {
-    await axios.post('/api/local_organize/start')
+    await axios.post('/api/p115/local_organize/start')
     window.$message.success('任务已提交')
   } catch (e) {
     window.$message.error('提交失败')
@@ -165,7 +165,7 @@ async function startOrganize() {
 async function startMonitor() {
   startingMonitor.value = true
   try {
-    const res = await axios.post('/api/local_organize/monitor/start')
+    const res = await axios.post('/api/p115/local_organize/monitor/start')
     if (res.data.success) {
       monitorRunning.value = true
       window.$message.success('监控已启动')
@@ -180,7 +180,7 @@ async function startMonitor() {
 async function stopMonitor() {
   stoppingMonitor.value = true
   try {
-    const res = await axios.post('/api/local_organize/monitor/stop')
+    const res = await axios.post('/api/p115/local_organize/monitor/stop')
     if (res.data.success) {
       monitorRunning.value = false
       window.$message.success('监控已停止')
