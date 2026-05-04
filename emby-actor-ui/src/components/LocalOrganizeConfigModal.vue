@@ -1,6 +1,6 @@
 <!-- src/components/LocalOrganizeConfigModal.vue -->
 <template>
-  <n-modal v-model:show="show" preset="card" style="width: 600px;" title="本地文件整理配置" :bordered="false">
+  <n-modal v-model:show="visible" preset="card" style="width: 600px;" title="本地文件整理配置" :bordered="false">
     <n-form ref="formRef" :model="form" label-placement="left" label-width="120">
       <n-form-item label="启用功能">
         <n-switch v-model:value="form.enabled" />
@@ -41,7 +41,7 @@
 
     <template #footer>
       <n-space justify="end">
-        <n-button @click="show = false">取消</n-button>
+        <n-button @click="closeModal">取消</n-button>
         <n-button type="primary" @click="saveConfig" :loading="saving">保存</n-button>
       </n-space>
     </template>
@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import { NModal, NForm, NFormItem, NSwitch, NInput, NInputNumber, NRadioGroup, NRadioButton, NSpace, NButton } from 'naive-ui'
 import axios from 'axios'
 
@@ -58,6 +58,12 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:show', 'saved'])
+
+// 内部响应式变量，用于真正的 v-model
+const visible = computed({
+  get: () => props.show,
+  set: (val) => emit('update:show', val)
+})
 
 const formRef = ref(null)
 const saving = ref(false)
@@ -103,5 +109,9 @@ async function saveConfig() {
   } finally {
     saving.value = false
   }
+}
+
+function closeModal() {
+  emit('update:show', false)
 }
 </script>
