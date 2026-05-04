@@ -74,7 +74,7 @@ const routes = [
     path: '/local-organize',
     name: 'LocalOrganize',
     component: LocalOrganizePage,
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
     path: '/review',
