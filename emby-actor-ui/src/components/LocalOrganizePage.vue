@@ -2,10 +2,10 @@
 <template>
   <n-layout content-style="padding: 24px;">
     <n-grid :x-gap="16" :y-gap="16" cols="1 s:2 m:4" responsive="screen" style="margin-bottom: 24px;">
-      <n-gi><n-card class="stat-card" size="small"><n-statistic label="总处理记录"><template #prefix><n-icon :component="LayersIcon" color="#2080f0" /></template>{{ stats.total || 0 }}</n-statistic></n-card></n-gi>
-      <n-gi><n-card class="stat-card" size="small"><n-statistic label="识别成功"><template #prefix><n-icon :component="CheckmarkCircleIcon" color="#18a058" /></template>{{ stats.success || 0 }}</n-statistic></n-card></n-gi>
-      <n-gi><n-card class="stat-card" size="small"><n-statistic label="未识别"><template #prefix><n-icon :component="HelpCircleIcon" color="#f0a020" /></template>{{ stats.unrecognized || 0 }}</n-statistic></n-card></n-gi>
-      <n-gi><n-card class="stat-card" size="small"><n-statistic label="本周处理"><template #prefix><n-icon :component="TrendingUpIcon" color="#2080f0" /></template>{{ stats.thisWeek || 0 }}</n-statistic></n-card></n-gi>
+      <n-gi><n-card class="stat-card" size="small"><n-statistic label="总处理记录"><template #prefix><n-icon :component="LayersOutline" color="#2080f0" /></template>{{ stats.total || 0 }}</n-statistic></n-card></n-gi>
+      <n-gi><n-card class="stat-card" size="small"><n-statistic label="识别成功"><template #prefix><n-icon :component="CheckmarkCircleOutline" color="#18a058" /></template>{{ stats.success || 0 }}</n-statistic></n-card></n-gi>
+      <n-gi><n-card class="stat-card" size="small"><n-statistic label="未识别"><template #prefix><n-icon :component="HelpCircleOutline" color="#f0a020" /></template>{{ stats.unrecognized || 0 }}</n-statistic></n-card></n-gi>
+      <n-gi><n-card class="stat-card" size="small"><n-statistic label="本周处理"><template #prefix><n-icon :component="TrendingUpOutline" color="#2080f0" /></template>{{ stats.thisWeek || 0 }}</n-statistic></n-card></n-gi>
     </n-grid>
 
     <n-card :bordered="false" size="small">
@@ -14,19 +14,19 @@
           <n-text strong style="font-size: 16px;">本地文件整理</n-text>
           <n-space>
             <n-button type="primary" @click="openConfigModal" size="small">
-              <template #icon><n-icon :component="SettingsIcon" /></template>
+              <template #icon><n-icon :component="SettingsOutline" /></template>
               配置
             </n-button>
             <n-button v-if="!monitorRunning" type="success" @click="startMonitor" :loading="startingMonitor" size="small">
-              <template #icon><n-icon :component="PlayIcon" /></template>
+              <template #icon><n-icon :component="PlayOutline" /></template>
               启动监控
             </n-button>
             <n-button v-else type="warning" @click="stopMonitor" :loading="stoppingMonitor" size="small">
-              <template #icon><n-icon :component="StopIcon" /></template>
+              <template #icon><n-icon :component="StopOutline" /></template>
               停止监控
             </n-button>
             <n-button type="primary" @click="startOrganize" :loading="organizing" size="small">
-              <template #icon><n-icon :component="FlashIcon" /></template>
+              <template #icon><n-icon :component="FlashOutline" /></template>
               立即整理
             </n-button>
           </n-space>
@@ -36,12 +36,12 @@
       <n-space style="margin-bottom: 20px;" align="center" justify="space-between">
         <n-space>
           <n-input v-model:value="searchQuery" placeholder="搜索原文件名..." clearable @keyup.enter="fetchRecords" @clear="fetchRecords" style="width: 280px;">
-            <template #prefix><n-icon :component="SearchIcon" /></template>
+            <template #prefix><n-icon :component="SearchOutline" /></template>
           </n-input>
           <n-select v-model:value="statusFilter" :options="statusOptions" style="width: 120px;" @update:value="fetchRecords" />
         </n-space>
         <n-button type="primary" secondary @click="fetchRecords">
-          <template #icon><n-icon :component="RefreshIcon" /></template>
+          <template #icon><n-icon :component="RefreshOutline" /></template>
           刷新
         </n-button>
       </n-space>
@@ -65,7 +65,18 @@
 <script setup>
 import { ref, reactive, onMounted, h } from 'vue'
 import { NButton, NDataTable, NSpace, NInput, NSelect, NCard, NGrid, NGi, NStatistic, NIcon, NText, NTag } from 'naive-ui'
-import { Layers as LayersIcon, CheckmarkCircle as CheckmarkCircleIcon, HelpCircle as HelpCircleIcon, TrendingUp as TrendingUpIcon, Search as SearchIcon, Refresh as RefreshIcon, Play as PlayIcon, Stop as StopIcon, Flash as FlashIcon, Settings as SettingsIcon } from '@vicons/ionicons5'
+import {
+  LayersOutline,
+  CheckmarkCircleOutline,
+  HelpCircleOutline,
+  TrendingUpOutline,
+  SearchOutline,
+  RefreshOutline,
+  PlayOutline,
+  StopOutline,
+  FlashOutline,
+  SettingsOutline,
+} from '@vicons/ionicons5'
 import axios from 'axios'
 import LocalOrganizeConfigModal from './LocalOrganizeConfigModal.vue'
 
