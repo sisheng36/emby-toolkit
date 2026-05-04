@@ -63,47 +63,48 @@ def _extract_tmdb_id(path: str) -> Optional[str]:
 def _identify_media(file_path: str, folder_name: str = None) -> Tuple[Optional[str], Optional[str], Optional[str]]:
     """识别媒体 TMDb ID 和类型"""
     from handler import tmdb as tmdb_handler
-    
+
     file_name = os.path.basename(file_path)
     folder_name = folder_name or os.path.dirname(file_path)
     parent_name = os.path.basename(folder_name)
     grandparent_name = os.path.basename(os.path.dirname(folder_name)) if folder_name else ""
-    
+
     tmdb_id = _extract_tmdb_id(file_name)
     if not tmdb_id:
         tmdb_id = _extract_tmdb_id(parent_name)
     if not tmdb_id:
         tmdb_id = _extract_tmdb_id(grandparent_name)
-    
+
     if tmdb_id:
-    # 即使有 ID，也要获取标题，否则后续重命名会误用原文件名
-    try:
-        api_key = config_manager.APP_CONFIG.get(constants.CONFIG_OPTION_TMDB_API_KEY)
-        if api_key:
-            media = tmdb_handler.get_media_details(tmdb_id, api_key)
-            if media:
-                media_type = media.get('media_type', 'movie')
-                title = media.get('title') or media.get('name')
-                return tmdb_id, media_type, title
-        # 如果 API 不可用，降级返回（但无法得到 title）
-        return tmdb_id, None, None
-    except Exception as e:
-        logger.warning(f"TMDb 查询 {tmdb_id} 失败: {e}")
-        return tmdb_id, None, None
-    
+        # 提取到 ID 后，获取标题和类型
+        try:
+            api_key = config_manager.APP_CONFIG.get(constants.CONFIG_OPTION_TMDB_API_KEY)
+            if api_key:
+                media = tmdb_handler.get_media_details(tmdb_id, api_key)
+                if media:
+                    media_type = media.get('media_type', 'movie')
+                    title = media.get('title') or media.get('name')
+                    return tmdb_id, media_type, title
+            # 如果 API 不可用，降级返回（标题留空）
+            return tmdb_id, None, None
+        except Exception as e:
+            logger.warning(f"TMDb 查询 {tmdb_id} 失败: {e}")
+            return tmdb_id, None, None
+
+    # 原有的解析逻辑
     season_num, episode_num, media_type = _parse_video_filename(file_name)
     if not media_type:
         if season_num or episode_num:
             media_type = "tv"
         else:
             media_type = "movie"
-    
+
     search_query = file_name
     for ext in VIDEO_EXTENSIONS:
         if search_query.endswith(f'.{ext}'):
             search_query = search_query[:-len(ext)-1]
             break
-    
+
     search_query = re.sub(r'[sS]\d{1,4}[eE]\d{1,4}', '', search_query)
     search_query = re.sub(r'第\d+季', '', search_query)
     search_query = re.sub(r'第\d+集', '', search_query)
@@ -111,18 +112,18 @@ def _identify_media(file_path: str, folder_name: str = None) -> Tuple[Optional[s
     search_query = re.sub(r'\(.*?\)', '', search_query)
     search_query = re.sub(r'\d{4}', '', search_query)
     search_query = re.sub(r'\s+', ' ', search_query).strip()
-    
+
     if not search_query:
         return None, None, None
-    
+
     api_key = config_manager.APP_CONFIG.get(constants.CONFIG_OPTION_TMDB_API_KEY)
     if not api_key:
         return None, None, None
-    
+
     results = tmdb_handler.search_media(search_query, api_key, item_type=media_type)
     if results:
         return str(results[0].get('id')), media_type, results[0].get('title') or results[0].get('name')
-    
+
     return None, None, None
 
 def _match_rule(tmdb_id: str, media_type: str) -> Tuple[Optional[str], Optional[str]]:
