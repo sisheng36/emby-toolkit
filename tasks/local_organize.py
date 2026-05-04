@@ -6,6 +6,7 @@ import json
 import time
 import shutil
 import threading
+import requests
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Optional, Tuple, List, Dict
@@ -81,25 +82,30 @@ def _identify_media(file_path: str, source_type: str, folder_name: str = None) -
 
     api_key = config_manager.APP_CONFIG.get(constants.CONFIG_OPTION_TMDB_API_KEY, '')
 
-    # --- 情况 A: 提取到 TMDb ID ---
+    # --- 情况 A: 提取到 TMDb ID，直接根据源类型获取标题 ---
     if tmdb_id:
         try:
+            if not api_key:
+                return tmdb_id, None, None
+
+            # 根据源目录类型，选择对应的详情接口
             if source_type == 'movie':
-                movie = tmdb_handler.get_movie(tmdb_id, api_key)
-                if movie and movie.get('title'):
-                    return tmdb_id, 'movie', movie['title']
+                details = tmdb_handler.get_movie_details(int(tmdb_id), api_key)
+                if details and details.get('title'):
+                    return tmdb_id, 'movie', details['title']
             elif source_type == 'tv':
-                tv = tmdb_handler.get_tv_show(tmdb_id, api_key)
-                if tv and tv.get('name'):
-                    return tmdb_id, 'tv', tv['name']
-            else:  # mixed
-                movie = tmdb_handler.get_movie(tmdb_id, api_key)
+                details = tmdb_handler.get_tv_details(int(tmdb_id), api_key)
+                if details and details.get('name'):
+                    return tmdb_id, 'tv', details['name']
+            else:  # mixed：先尝试电影，再尝试电视剧
+                movie = tmdb_handler.get_movie_details(int(tmdb_id), api_key)
                 if movie and movie.get('title'):
                     return tmdb_id, 'movie', movie['title']
-                tv = tmdb_handler.get_tv_show(tmdb_id, api_key)
+                tv = tmdb_handler.get_tv_details(int(tmdb_id), api_key)
                 if tv and tv.get('name'):
                     return tmdb_id, 'tv', tv['name']
-            # 如果明确类型但查不到，降级返回无标题
+
+            # 如果明确类型但查不到，返回空标题
             return tmdb_id, None, None
         except Exception as e:
             logger.warning(f"TMDb 查询 {tmdb_id} 失败: {e}")
@@ -114,7 +120,7 @@ def _identify_media(file_path: str, source_type: str, folder_name: str = None) -
         media_type = 'tv'
     # mixed 则保留解析结果，若未解析到季集信息则默认 movie
 
-    # 构造搜索关键词
+    # 构造搜索关键词（清理文件名）
     search_query = file_name
     for ext in VIDEO_EXTENSIONS:
         if search_query.endswith(f'.{ext}'):
@@ -132,7 +138,7 @@ def _identify_media(file_path: str, source_type: str, folder_name: str = None) -
     if not search_query or not api_key:
         return None, None, None
 
-    # 按源类型限制搜索
+    # 按源类型限制搜索类别
     if source_type == 'movie':
         results = tmdb_handler.search_media(search_query, api_key, item_type='movie')
     elif source_type == 'tv':
@@ -303,30 +309,48 @@ def _scan_directory(directory: str, extensions: set = None) -> List[str]:
     return files
 
 def _process_single_file(file_path: str, source_type: str, config: dict, target_base: str, mode: str,
-                       auto_scrape: bool, rename_config: dict) -> bool:
+                         auto_scrape: bool, rename_config: dict) -> bool:
+    """处理单个文件
+    Args:
+        file_path: 源文件完整路径
+        source_type: 来源类型 ('movie', 'tv', 'mixed')
+        config: 全局配置字典
+        target_base: 目标根目录
+        mode: 整理模式 (hardlink/copy/move)
+        auto_scrape: 是否自动刮削
+        rename_config: 重命名规则配置
+    Returns:
+        是否成功整理
+    """
     try:
         original_name = os.path.basename(file_path)
         folder_name = os.path.dirname(file_path)
 
+        # ★ 关键调用：传递 source_type 以定向识别
         tmdb_id, media_type, title = _identify_media(file_path, source_type, folder_name)
 
         if not tmdb_id:
             _add_record(file_path, original_name, '', 'unrecognized', None, media_type,
-                      '', '', 'local')
+                        '', '', 'local')
             return False
 
+        # 匹配分类规则（可能使用115规则，若无则返回空）
         target_cid, category_path = _match_rule(tmdb_id, media_type)
+
+        # 解析季集号
         season_num, episode_num, _ = _parse_video_filename(original_name)
 
+        # 构建目标路径
         target_path = _build_target_path(
             target_base, category_path, tmdb_id, media_type, title,
             season_num, episode_num, original_name
         )
 
+        # 执行文件操作
         if _organize_file(file_path, target_path, mode):
             renamed_name = os.path.basename(target_path)
             _add_record(file_path, original_name, renamed_name, 'success', tmdb_id, media_type,
-                      target_cid or '', category_path or '', 'local')
+                        target_cid or '', category_path or '', 'local')
 
             if auto_scrape:
                 _scrape_file(target_path)
@@ -335,10 +359,11 @@ def _process_single_file(file_path: str, source_type: str, config: dict, target_
 
         return False
     except Exception as e:
-        logger.error(f"处理文件异常 {file_path}: {e}")
+        logger.error(f"  ➜ 处理文件异常 {file_path}: {e}")
         return False
 
 def task_local_organize(processor=None):
+    """本地文件整理主任务"""
     logger.info("=== 开始本地文件整理 ===")
 
     try:
@@ -369,6 +394,7 @@ def task_local_organize(processor=None):
         update_progress(100, "未配置目标目录")
         return
 
+    # 构建源列表：每个元素是 (source_type, directory)
     sources = []
     if source_movie and os.path.exists(source_movie):
         sources.append(('movie', source_movie))
@@ -383,10 +409,12 @@ def task_local_organize(processor=None):
 
     update_progress(5, "正在扫描源目录...")
 
-    all_files = []
+    # 扫描所有文件，并记录它们的来源类型
+    all_files = []  # 元素：(文件路径, source_type)
     for source_type, source_dir in sources:
         files = _scan_directory(source_dir)
-        all_files.extend([(f, source_type) for f in files])
+        for f in files:
+            all_files.append((f, source_type))
         logger.info(f"  ➜ [{source_type}] 扫描到 {len(files)} 个视频文件")
 
     if not all_files:
@@ -401,15 +429,23 @@ def task_local_organize(processor=None):
     failed = 0
     rename_config = _get_rename_config()
 
+    # 多线程处理
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {}
         for file_path, source_type in all_files:
             future = executor.submit(
-                _process_single_file, file_path, source_type, config, target_base,
-                mode, auto_scrape, rename_config
+                _process_single_file,   # 处理函数
+                file_path,              # 参数1
+                source_type,            # 参数2
+                config,                 # 参数3
+                target_base,            # 参数4
+                mode,                   # 参数5
+                auto_scrape,            # 参数6
+                rename_config           # 参数7
             )
-            futures[future] = file_path
+            futures[future] = file_path  # 仅用于日志关联
 
+        # 收集结果
         for future in futures:
             try:
                 result = future.result()
@@ -421,7 +457,7 @@ def task_local_organize(processor=None):
                 prog = 10 + int((processed / total) * 90)
                 update_progress(prog, f"正在整理... ({processed}/{total})")
             except Exception as e:
-                logger.error(f"处理异常: {e}")
+                logger.error(f"  ➜ 处理异常: {e}")
                 failed += 1
 
     final_msg = f"整理完成！成功 {success} 个，失败 {failed} 个"
