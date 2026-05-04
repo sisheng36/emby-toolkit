@@ -46,6 +46,7 @@ CONFIG_OPTION_MONITOR_SHA1_PC_SEARCH = "monitor_sha1_pc_search"
 # ✨ 本地文件整理配置 (Local Organize) - 
 # ==============================================================================
 # ---- 本地文件整理模块配置常量 ----
+CONFIG_SECTION_LOCAL_ORGANIZE = 'local_organize'
 CONFIG_OPTION_LOCAL_ORGANIZE_ENABLED = 'local_organize_enabled'
 CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MOVIE = 'local_organize_source_movie'
 CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_TV = 'local_organize_source_tv'
