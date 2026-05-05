@@ -53,7 +53,11 @@ import {
 } from '@vicons/ionicons5'
 import axios from 'axios'
 import LocalOrganizeConfigModal from './LocalOrganizeConfigModal.vue'
+import LocalRuleManagerModal from './LocalRuleManagerModal.vue'
+import LocalRenameConfigModal from './LocalRenameConfigModal.vue'
 
+const ruleManagerRef = ref(null)
+const renameConfigRef = ref(null)
 const loading = ref(false)
 const organizing = ref(false)
 const startingMonitor = ref(false)
