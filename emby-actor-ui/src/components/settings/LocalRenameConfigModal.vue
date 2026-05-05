@@ -74,7 +74,7 @@
           <n-tab-pane name="adv" tab="高级设置">
             <n-form label-placement="left" size="small" style="margin-top: 16px;">
               
-              <!-- ★★★ 新增：覆盖模式选项 ★★★ -->
+              <!-- ★ 覆盖模式选项 -->
               <n-form-item label="同集/同电影覆盖模式">
                 <n-radio-group v-model:value="config.conflict_mode">
                   <n-space vertical>
@@ -95,7 +95,7 @@
               </n-form-item>
               <n-divider style="margin: 12px 0;" />
 
-              
+            </n-form>
           </n-tab-pane>
 
         </n-tabs>
@@ -153,8 +153,17 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue';
-import { NModal, NGrid, NGi, NTabs, NTabPane, NForm, NFormItem, NRadioGroup, NSwitch, NSpace, NButton, NIcon, NSpin, NTag, useMessage, NRadio, NAlert } from 'naive-ui';
-import { Folder as FolderIcon, DocumentTextOutline as DocumentIcon, EyeOutline as EyeIcon, Menu as MenuIcon, LinkOutline as LinkIcon } from '@vicons/ionicons5';
+import { 
+  NModal, NGrid, NGi, NTabs, NTabPane, NForm, NFormItem, NRadioGroup, 
+  NSwitch, NSpace, NButton, NIcon, NSpin, NTag, useMessage, NRadio, NAlert, NDivider 
+} from 'naive-ui';
+import { 
+  FolderOutline as FolderIcon, 
+  DocumentTextOutline as DocumentIcon, 
+  EyeOutline as EyeIcon, 
+  MenuOutline as MenuIcon, 
+  LinkOutline as LinkIcon 
+} from '@vicons/ionicons5';
 import axios from 'axios';
 
 const message = useMessage();
@@ -162,11 +171,21 @@ const isVisible = ref(false);
 const loading = ref(false);
 const saving = ref(false);
 
+// ★ 配置对象定义
+const config = ref({
+  keep_original_name: false,
+  main_dir_format: ['title_zh', 'sep_space', 'year', 'sep_space', 'tmdb_bracket'],
+  season_dir_format: ['season_name_en'],
+  file_format: ['title_zh', 'sep_dash_space', 's_e', 'sep_dash_space', 'resolution'],
+  strm_url_fmt: 'standard',
+  conflict_mode: 'replace'
+});
+
 // 乐高模块定义
 const allBlocks = [
   { id: 'title_zh', label: '中文片名' },
   { id: 'title_en', label: '英文片名' },
-  { id: 'title_orig', label: '原文片名' }, // ★ 新增：原文片名
+  { id: 'title_orig', label: '原文片名' },
   { id: 'year', label: '年份 (2008)' },
   { id: 'year_pure', label: '纯年份 2008' },
   { id: 's_e', label: '季集号 (S01E01)' },
@@ -217,7 +236,7 @@ watch(() => config.value, (newConf) => {
   activeTracks.value.main_dir = initTrack(newConf.main_dir_format);
   activeTracks.value.season_dir = initTrack(newConf.season_dir_format);
   activeTracks.value.file = initTrack(newConf.file_format);
-}, { immediate: true });
+}, { immediate: true, deep: true });
 
 const getAvailableBlocks = (trackName) => {
   const activeBaseIds = activeTracks.value[trackName].map(b => b.id);
@@ -258,7 +277,7 @@ const drop = (event, dropIndex, targetTrackName) => {
   updateConfigFormat(targetTrackName);
 };
 
-// ★ 修改模拟数据：换成《寄生虫》，展示英文和原文的区别
+// 模拟数据
 const mockMovie = { zh: '寄生虫', en: 'Parasite', orig_title: '기생충', year: '2019', tmdb: '496243', res: '1080p', src: 'BluRay', codec: 'AVC', audio: 'DDP 5.1', group: 'CMCT', orig: 'Parasite.2019.REMASTERED.1080p', ext: '.mkv' };
 const mockTv = { zh: '绝命毒师', en: 'Breaking Bad', orig_title: 'Breaking Bad', year: '2008', tmdb: '1396', s: '1', e: '1', res: '2160p', src: 'WEB-DL', stream: 'NF', effect: 'HDR', codec: 'HEVC', audio_count: '2Audios', audio: 'Atmos', fps: '60fps', group: 'HHWEB', orig: 'Breaking.Bad.S01E01.2160p.NF.WEB-DL', ext: '.mp4' };
 const mockOriginalMovieDir = "Parasite.2019.REMASTERED.1080p.BluRay.x264";
@@ -266,7 +285,6 @@ const mockOriginalMovieFile = "Parasite.2019.REMASTERED.1080p.BluRay.x264.mkv";
 const mockOriginalTvDir = "Breaking.Bad.S01.2160p.WEB-DL.x265";
 const mockOriginalTvFile = "Breaking.Bad.S01E01.2160p.WEB-DL.x265.mp4";
 
-// 统一的名称生成引擎
 const buildName = (mockData, formatArray, isTv) => {
   if (config.value.keep_original_name) return ''; 
   if (!formatArray) return '';
@@ -279,7 +297,7 @@ const buildName = (mockData, formatArray, isTv) => {
     
     if (blockId === 'title_zh') val = mockData.zh;
     else if (blockId === 'title_en') val = mockData.en;
-    else if (blockId === 'title_orig') val = mockData.orig_title; // ★ 新增：原文片名
+    else if (blockId === 'title_orig') val = mockData.orig_title;
     else if (blockId === 'year') val = `(${mockData.year})`;
     else if (blockId === 'year_pure') val = mockData.year;
     else if (blockId === 's_e' && isTv) val = `S0${mockData.s}E0${mockData.e}`;
@@ -353,7 +371,6 @@ const open = async () => {
   try {
     const res = await axios.get('/api/p115/local_organize/rename_config');
     if (res.data.success) {
-      // 兼容旧配置
       const data = res.data.data;
       if (!data.main_dir_format) data.main_dir_format = ['title_zh', 'sep_space', 'year', 'sep_space', 'tmdb_bracket'];
       if (!data.season_dir_format) data.season_dir_format = ['season_name_en'];
