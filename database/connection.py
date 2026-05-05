@@ -497,6 +497,24 @@ def init_db():
                     )
                 """)
 
+                # ========== ★ 新增：本地文件整理记录表 ==========
+                logger.trace("  ➜ 正在创建 'local_organize_records' 表 (本地文件整理记录)...")
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS local_organize_records (
+                        id SERIAL PRIMARY KEY,
+                        file_path TEXT UNIQUE NOT NULL,  -- 源文件完整路径（唯一键）
+                        original_name TEXT NOT NULL,
+                        renamed_name TEXT,
+                        status TEXT NOT NULL,             -- 'success' 或 'unrecognized'
+                        fail_reason TEXT,
+                        tmdb_id TEXT,
+                        media_type TEXT,
+                        category_name TEXT,               -- 分类名称（无需CID）
+                        season_number INTEGER,
+                        processed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                    )
+                """)
+
                 # ======================================================================
                 # ★★★ 数据库平滑升级 (START) ★★★
                 # 此处代码用于新增在新版本中添加的列。
