@@ -152,7 +152,7 @@ def _identify_media(file_path: str, source_type: str, folder_name: str = None) -
     return None, None, None
 
 def _match_rule(tmdb_id: str, media_type: str) -> Tuple[Optional[str], Optional[str]]:  
-    raw_rules = settings_db.get_setting('local_sorting_rules')  
+    raw_rules = settings_db.get_setting('local_organize_sorting_rules')  
     if not raw_rules:  
         return None, None  
     rules = raw_rules if isinstance(raw_rules, list) else []  
@@ -181,12 +181,15 @@ def _match_rule(tmdb_id: str, media_type: str) -> Tuple[Optional[str], Optional[
       
     return None, rules[0]['category_path']
 
-def _get_rename_config() -> dict:  
-    return settings_db.get_setting('local_rename_config') or {  
-        "keep_original_name": False,  
-        "main_dir_format": ['title_zh', 'sep_space', 'year', 'sep_space', 'tmdb_bracket'],  
-        "season_dir_format": ['season_name_en'],  
-        "file_format": ['title_zh', 'sep_dash_space', 'year'],  
+def _get_rename_config() -> dict:
+    """获取本地整理专用的重命名配置，不存在则使用默认值"""
+    return settings_db.get_setting('local_organize_rename_config') or {
+        "keep_original_name": False,
+        "main_dir_format": ['title_zh', 'sep_space', 'year', 'sep_space', 'tmdb_bracket'],
+        "season_dir_format": ['season_name_en'],
+        "file_format": ['title_zh', 'sep_dash_space', 'year'],
+        "strm_url_fmt": "standard",
+        "conflict_mode": "replace"
     }
 
 def _build_target_path(target_base: str, category_path: str, tmdb_id: str, media_type: str,
