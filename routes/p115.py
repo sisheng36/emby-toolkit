@@ -1578,10 +1578,8 @@ def local_organize_config():
     # --- POST: 保存配置（使用 dynamic_app_config 统一存储） ---
     data = request.json or {}
     try:
-        # 从数据库加载完整 dynamic_app_config
         full_dynamic = settings_db.get_setting('dynamic_app_config') or {}
 
-        # 更新本地整理相关键
         updates = {
             constants.CONFIG_OPTION_LOCAL_ORGANIZE_ENABLED: bool(data.get('enabled', False)),
             constants.CONFIG_OPTION_LOCAL_ORGANIZE_SOURCE_MOVIE: str(data.get('source_movie', '')),
@@ -1594,10 +1592,7 @@ def local_organize_config():
         }
         full_dynamic.update(updates)
 
-        # 保存回数据库
         settings_db.save_setting('dynamic_app_config', full_dynamic)
-
-        # 重载配置以确保内存中生效
         config_manager.load_config()
 
         return jsonify({"success": True, "message": "配置已保存"})
@@ -1638,7 +1633,7 @@ def local_organize_monitor_stop():
         logger.error(f"停止监控失败: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
 
-# ================= 整理记录 =================
+# ================= 整理记录 (使用独立表 local_organize_records) =================
 @p115_bp.route('/local_organize/records', methods=['GET'])
 @admin_required
 def local_organize_records():
@@ -1651,7 +1646,7 @@ def local_organize_records():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
-                where_clauses = ["(fail_reason = 'local' OR fail_reason IS NULL OR fail_reason = '')"]
+                where_clauses = []
                 params = []
                 if search:
                     where_clauses.append("(original_name ILIKE %s OR renamed_name ILIKE %s)")
@@ -1659,27 +1654,39 @@ def local_organize_records():
                 if status != 'all':
                     where_clauses.append("status = %s")
                     params.append(status)
-                where_sql = "WHERE " + " AND ".join(where_clauses)
-                cursor.execute(f"SELECT COUNT(*) FROM p115_organize_records {where_sql}", tuple(params))
+                where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+                cursor.execute(f"SELECT COUNT(*) FROM local_organize_records {where_sql}", tuple(params))
                 total = cursor.fetchone()[0]
+
                 cursor.execute(f"""
-                    SELECT * FROM p115_organize_records
+                    SELECT * FROM local_organize_records
                     {where_sql}
                     ORDER BY processed_at DESC
                     LIMIT %s OFFSET %s
                 """, tuple(params + [per_page, offset]))
                 items = cursor.fetchall()
-                cursor.execute("SELECT COUNT(*) FROM p115_organize_records WHERE status = 'success'")
+
+                # 全量统计
+                cursor.execute("SELECT COUNT(*) FROM local_organize_records")
+                stat_total = cursor.fetchone()[0]
+                cursor.execute("SELECT COUNT(*) FROM local_organize_records WHERE status = 'success'")
                 success = cursor.fetchone()[0]
-                cursor.execute("SELECT COUNT(*) FROM p115_organize_records WHERE status = 'unrecognized'")
+                cursor.execute("SELECT COUNT(*) FROM local_organize_records WHERE status = 'unrecognized'")
                 unrecognized = cursor.fetchone()[0]
-                cursor.execute("SELECT COUNT(*) FROM p115_organize_records WHERE processed_at >= NOW() - INTERVAL '7 days'")
+                cursor.execute("SELECT COUNT(*) FROM local_organize_records WHERE processed_at >= NOW() - INTERVAL '7 days'")
                 this_week = cursor.fetchone()[0]
+
         return jsonify({
             "success": True,
             "items": items,
             "total": total,
-            "stats": {"total": total, "success": success, "unrecognized": unrecognized, "thisWeek": this_week}
+            "stats": {
+                "total": stat_total,
+                "success": success,
+                "unrecognized": unrecognized,
+                "thisWeek": this_week
+            }
         })
     except Exception as e:
         logger.error(f"获取本地整理记录失败: {e}")
@@ -1691,7 +1698,6 @@ def local_organize_correct():
     data = request.json
     record_id = data.get('id')
     tmdb_id = data.get('tmdb_id')
-    target_cid = data.get('target_cid')
     if not record_id or not tmdb_id:
         return jsonify({"success": False, "message": "缺少必要参数"}), 400
     try:
@@ -1699,10 +1705,10 @@ def local_organize_correct():
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    UPDATE p115_organize_records
-                    SET tmdb_id = %s, target_cid = %s, status = 'success'
+                    UPDATE local_organize_records
+                    SET tmdb_id = %s, status = 'success'
                     WHERE id = %s
-                """, (tmdb_id, target_cid, record_id))
+                """, (tmdb_id, record_id))
                 conn.commit()
         return jsonify({"success": True, "message": "纠错已保存"})
     except Exception as e:
@@ -1716,7 +1722,7 @@ def local_organize_delete(record_id):
         from database.connection import get_db_connection
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
-                cursor.execute("DELETE FROM p115_organize_records WHERE id = %s", (record_id,))
+                cursor.execute("DELETE FROM local_organize_records WHERE id = %s", (record_id,))
                 conn.commit()
         return jsonify({"success": True, "message": "记录已删除"})
     except Exception as e:
