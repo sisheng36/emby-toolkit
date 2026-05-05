@@ -28,12 +28,44 @@
             <n-button type="primary" @click="startOrganize" :loading="organizing" size="small">
               <template #icon><n-icon :component="FlashOutline" /></template>
               立即整理
-            </n-button> 
+            </n-button>
+            <!-- ★ 新增：分类规则与重命名配置入口 -->
             <n-button @click="ruleManagerRef.open()">分类规则</n-button>  
-            <n-button @click="renameConfigRef.open()">重命名配置</n-button>  
-  
-            <LocalRuleManagerModal ref="ruleManagerRef" />  
-            <LocalRenameConfigModal ref="renameConfigRef" />
+            <n-button @click="renameConfigRef.open()">重命名配置</n-button>
+          </n-space>
+        </n-space>
+      </template>
+
+      <n-space style="margin-bottom: 20px;" align="center" justify="space-between">
+        <n-space>
+          <n-input v-model:value="searchQuery" placeholder="搜索原文件名..." clearable @keyup.enter="fetchRecords" @clear="fetchRecords" style="width: 280px;">
+            <template #prefix><n-icon :component="SearchOutline" /></template>
+          </n-input>
+          <n-select v-model:value="statusFilter" :options="statusOptions" style="width: 120px;" @update:value="fetchRecords" />
+        </n-space>
+        <n-button type="primary" secondary @click="fetchRecords">
+          <template #icon><n-icon :component="RefreshOutline" /></template>
+          刷新
+        </n-button>
+      </n-space>
+
+      <n-data-table
+        :columns="columns"
+        :data="records"
+        :loading="loading"
+        :pagination="paginationReactive"
+        :bordered="false"
+        striped
+        size="small"
+        :row-key="row => row.id"
+      />
+    </n-card>
+
+    <LocalOrganizeConfigModal v-model:show="showConfigModal" @saved="onConfigSaved" />
+    <!-- ★ 新增：分类规则与重命名配置的独立弹窗 -->
+    <LocalRuleManagerModal ref="ruleManagerRef" />  
+    <LocalRenameConfigModal ref="renameConfigRef" />
+  </n-layout>
 </template>
 
 <script setup>
@@ -53,17 +85,20 @@ import {
 } from '@vicons/ionicons5'
 import axios from 'axios'
 import LocalOrganizeConfigModal from './LocalOrganizeConfigModal.vue'
+// ★ 新增：导入分类规则与重命名配置组件
 import LocalRuleManagerModal from './LocalRuleManagerModal.vue'
 import LocalRenameConfigModal from './LocalRenameConfigModal.vue'
 
-const ruleManagerRef = ref(null)
-const renameConfigRef = ref(null)
 const loading = ref(false)
 const organizing = ref(false)
 const startingMonitor = ref(false)
 const stoppingMonitor = ref(false)
 const showConfigModal = ref(false)
 const monitorRunning = ref(false)
+
+// ★ 新增：弹窗组件引用
+const ruleManagerRef = ref(null)
+const renameConfigRef = ref(null)
 
 const searchQuery = ref('')
 const statusFilter = ref('all')
