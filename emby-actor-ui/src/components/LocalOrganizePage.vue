@@ -86,8 +86,8 @@ import {
 import axios from 'axios'
 import LocalOrganizeConfigModal from './LocalOrganizeConfigModal.vue'
 // ★ 新增：导入分类规则与重命名配置组件
-import LocalRuleManagerModal from './LocalRuleManagerModal.vue'
-import LocalRenameConfigModal from './LocalRenameConfigModal.vue'
+import LocalRuleManagerModal from './settings/LocalRuleManagerModal.vue'
+import LocalRenameConfigModal from './settings/LocalRenameConfigModal.vue'
 
 const loading = ref(false)
 const organizing = ref(false)
