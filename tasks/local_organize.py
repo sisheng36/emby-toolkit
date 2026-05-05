@@ -152,37 +152,49 @@ def _identify_media(file_path: str, source_type: str, folder_name: str = None) -
     return None, None, None
 
 def _match_rule(tmdb_id: str, media_type: str) -> Tuple[Optional[str], Optional[str]]:
-    """匹配分类规则，返回目标分类 CID 和名称 (本地整理可不用网盘CID，但保留兼容)"""
-    raw_rules = settings_db.get_setting('p115_sorting_rules')
+    """
+    匹配本地文件整理的分类规则，返回 (None, category_path)。
+    规则从 'local_organize_sorting_rules' 读取，不再依赖 cid 和 SmartOrganizer。
+    """
+    raw_rules = settings_db.get_setting('local_organize_sorting_rules')
     if not raw_rules:
         return None, None
 
-    rules = raw_rules if isinstance(raw_rules, list) else []
-    if isinstance(raw_rules, str):
+    # 解析规则列表（兼容 list / JSON 字符串）
+    if isinstance(raw_rules, list):
+        rules = raw_rules
+    elif isinstance(raw_rules, str):
         try:
             rules = json.loads(raw_rules)
         except:
             rules = []
+    else:
+        return None, None
 
     if not rules:
         return None, None
 
-    rules = [r for r in rules if r.get('enabled', True) and r.get('cid')]
+    # 查找第一个匹配的启用规则
+    for rule in rules:
+        if not rule.get('enabled', True):
+            continue
 
-    if len(rules) == 1:
-        return str(rules[0]['cid']), rules[0].get('category_path') or rules[0].get('dir_name')
+        # 媒体类型过滤
+        rule_media_type = rule.get('media_type')
+        if rule_media_type and rule_media_type != media_type:
+            continue
 
-    # 多规则时尝试匹配（仅当 SmartOrganizer 可用时）
-    try:
-        from handler.p115_service import SmartOrganizer
-        organizer = SmartOrganizer(None, tmdb_id, media_type, "")
-        organizer.raw_metadata = organizer._fetch_raw_metadata()
-        for rule in rules:
-            if organizer._match_rule(rule):
-                return str(rule['cid']), rule.get('category_path') or rule.get('dir_name')
-    except Exception as e:
-        logger.warning(f"规则匹配异常，回退到第一条规则: {e}")
-        return str(rules[0]['cid']), rules[0].get('category_path') or rules[0].get('dir_name')
+        # 可选：按 TMDb ID 白名单过滤（不在列表中则跳过）
+        allowed_ids = rule.get('tmdb_ids')
+        if allowed_ids:
+            if isinstance(allowed_ids, list) and str(tmdb_id) not in allowed_ids:
+                continue
+            # 若不是列表则忽略该字段
+
+        # 提取分类路径（支持 category_path 或 dir_name）
+        category_path = rule.get('category_path') or rule.get('dir_name')
+        if category_path:
+            return None, category_path
 
     return None, None
 
