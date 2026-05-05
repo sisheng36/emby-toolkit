@@ -198,17 +198,13 @@ def _match_rule(tmdb_id: str, media_type: str) -> Tuple[Optional[str], Optional[
 
     return None, None
 
-def _get_rename_config() -> dict:
-    """获取本地整理专用的重命名配置，不存在则使用默认值"""
-    default_config = {
-        "main_title_lang": "zh",
-        "main_year_en": True,
-        "main_tmdb_fmt": "{tmdb=ID}",
-        "season_fmt": "Season {02}",
-        "file_format": ['title_zh', 'sep_dash_space', 'year'],
+def _get_rename_config() -> dict:  
+    return settings_db.get_setting('local_rename_config') or {  
+        "keep_original_name": False,  
+        "main_dir_format": ['title_zh', 'sep_space', 'year', 'sep_space', 'tmdb_bracket'],  
+        "season_dir_format": ['season_name_en'],  
+        "file_format": ['title_zh', 'sep_dash_space', 'year'],  
     }
-    # 从数据库读取独立配置，若不存在则返回默认值
-    return settings_db.get_setting('local_organize_rename_config') or default_config
 
 def _build_target_path(target_base: str, category_path: str, tmdb_id: str, media_type: str,
                    title: str, season: int = None, episode: int = None, original_name: str = None) -> str:
