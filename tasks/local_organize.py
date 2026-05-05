@@ -263,26 +263,29 @@ def _organize_file(src_path: str, target_path: str, mode: str) -> bool:
         logger.error(f"整理文件失败: {e}")
         return False
 
-def _add_record(file_id: str, original_name: str, renamed_name: str, status: str,
-               tmdb_id: str, media_type: str, target_cid: str, category_name: str,
-               source: str = 'local'):
+def _add_record(file_path: str, original_name: str, renamed_name: str, status: str,
+                tmdb_id: str, media_type: str, category_name: str,
+                source: str = 'local'):
+    """
+    写入本地整理记录表 local_organize_records
+    以 file_path 作为唯一键，不再使用 target_cid
+    """
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                    INSERT INTO p115_organize_records
-                    (file_id, original_name, renamed_name, status, tmdb_id, media_type, target_cid, category_name, fail_reason)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                    ON CONFLICT (file_id) DO UPDATE SET
+                    INSERT INTO local_organize_records
+                        (file_path, original_name, renamed_name, status, tmdb_id, media_type, category_name, fail_reason)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+                    ON CONFLICT (file_path) DO UPDATE SET
                         original_name = EXCLUDED.original_name,
                         renamed_name = EXCLUDED.renamed_name,
                         status = EXCLUDED.status,
                         tmdb_id = EXCLUDED.tmdb_id,
                         media_type = EXCLUDED.media_type,
-                        target_cid = EXCLUDED.target_cid,
                         category_name = EXCLUDED.category_name,
                         processed_at = NOW()
-                """, (file_id, original_name, renamed_name, status, tmdb_id, media_type, target_cid, category_name, source))
+                """, (file_path, original_name, renamed_name, status, tmdb_id, media_type, category_name, source))
                 conn.commit()
     except Exception as e:
         logger.warning(f"添加记录失败: {e}")
