@@ -1500,18 +1500,35 @@ class SmartOrganizer(P115MediaAnalyzerMixin):
             logger.warning(f"  ➜ [整理] 获取原始元数据失败: {e}", exc_info=True)
             return {}
 
-    def _match_rule(self, rule):
-        """
-        规则匹配逻辑 (支持 AND / OR 复合匹配)
-        """
-        if not self.raw_metadata: return False
-
-        # ==========================================
-        # 1. 绝对前置过滤条件 (必须满足，无视 AND/OR)
-        # ==========================================
-        # 媒体类型 (电影/剧集) 是硬性分类，必须优先满足
-        if rule.get('media_type') and rule['media_type'] != 'all':
-            if rule['media_type'] != self.media_type: return False
+    def _match_rule(tmdb_id: str, media_type: str) -> Tuple[Optional[str], Optional[str]]:  
+    raw_rules = settings_db.get_setting('local_sorting_rules')  
+    if not raw_rules:  
+        return None, None  
+    rules = raw_rules if isinstance(raw_rules, list) else []  
+    if isinstance(raw_rules, str):  
+        try: rules = json.loads(raw_rules)  
+        except: rules = []  
+      
+    # 本地规则用 category_path 作为必填字段  
+    rules = [r for r in rules if r.get('enabled', True) and r.get('category_path')]  
+    if not rules:  
+        return None, None  
+    if len(rules) == 1:  
+        return None, rules[0]['category_path']  
+      
+    # 多规则：复用 SmartOrganizer 的匹配逻辑（传 None 作为 client，不需要网盘）  
+    try:  
+        from handler.p115_service import SmartOrganizer  
+        organizer = SmartOrganizer(None, tmdb_id, media_type, "")  
+        organizer.raw_metadata = organizer._fetch_raw_metadata()  
+        for rule in rules:  
+            if organizer._match_rule(rule):  
+                return None, rule['category_path']  
+    except Exception as e:  
+        logger.warning(f"规则匹配异常，回退到第一条规则: {e}")  
+        return None, rules[0]['category_path']  
+      
+    return None, rules[0]['category_path']
 
         # ★★★ 核心重构：追剧状态的主动判定与分季隔离 ★★★
         if rule.get('watching_status') == 'watching' and self.media_type == 'tv':
