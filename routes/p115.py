@@ -1728,3 +1728,32 @@ def local_organize_delete(record_id):
     except Exception as e:
         logger.error(f"删除记录失败: {e}")
         return jsonify({"success": False, "message": str(e)}), 500
+
+# ================= 本地整理 - 分类规则 =================
+@p115_bp.route('/local_organize/sorting_rules', methods=['GET', 'POST'])
+@admin_required
+def local_sorting_rules():
+    key = 'local_organize_sorting_rules'
+    if request.method == 'GET':
+        rules = settings_db.get_setting(key) or []
+        return jsonify({"success": True, "data": rules})
+    # POST: 保存
+    data = request.json or []
+    settings_db.save_setting(key, data)
+    return jsonify({"success": True, "message": "分类规则已保存"})
+
+# ================= 本地整理 - 重命名配置 =================
+@p115_bp.route('/local_organize/rename_config', methods=['GET', 'POST'])
+@admin_required
+def local_rename_config():
+    key = 'local_organize_rename_config'
+    if request.method == 'GET':
+        config = settings_db.get_setting(key) or {
+            "main_title_lang": "zh",
+            "season_fmt": "Season {02}",
+            "file_format": ['title_zh', 'sep_dash_space', 'year']
+        }
+        return jsonify({"success": True, "data": config})
+    data = request.json or {}
+    settings_db.save_setting(key, data)
+    return jsonify({"success": True, "message": "重命名配置已保存"})
