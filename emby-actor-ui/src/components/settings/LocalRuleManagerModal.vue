@@ -325,10 +325,13 @@ const saveSortingRules = async () => {
 
 const addRule = () => {
   currentRule.value = {   
-  id: Date.now(), name: '', category_path: '', enabled: true, match_mode: 'and',  
-  media_type: 'all', genres: [], countries: [], languages: [],   
-  studios: [], keywords: [], ratings: [], actors: [],  
-  year_min: null, year_max: null, runtime_min: null, runtime_max: null, min_rating: 0  
+    id: Date.now(), name: '', category_path: '', enabled: true, match_mode: 'and',  
+    media_type: 'all', genres: [], countries: [], languages: [],   
+    studios: [], keywords: [], ratings: [], actors: [],  
+    year_min: null, year_max: null, runtime_min: null, runtime_max: null, min_rating: 0  
+  };
+  actorOptions.value = [];
+  showRuleModal.value = true;
 };
 
 const editRule = (rule) => {
@@ -346,8 +349,8 @@ const deleteRule = (rule) => {
 
 const confirmSaveRule = () => {
   if (!currentRule.value.name || !currentRule.value.category_path) {  
-  message.error('名称和目标子目录必填');  
-  return;  
+    message.error('名称和目标子目录必填');  
+    return;  
 }
   const idx = sortingRules.value.findIndex(r => r.id === currentRule.value.id);
   if (idx > -1) sortingRules.value[idx] = currentRule.value;
