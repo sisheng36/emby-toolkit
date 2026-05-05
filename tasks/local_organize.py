@@ -334,7 +334,7 @@ def _process_single_file(file_path: str, source_type: str, config: dict, target_
 
         if not tmdb_id:
             _add_record(file_path, original_name, '', 'unrecognized', None, media_type,
-                        '', '', 'local')
+            '', 'local')
             return False
 
         # 匹配分类规则（可能使用115规则，若无则返回空）
@@ -353,7 +353,7 @@ def _process_single_file(file_path: str, source_type: str, config: dict, target_
         if _organize_file(file_path, target_path, mode):
             renamed_name = os.path.basename(target_path)
             _add_record(file_path, original_name, renamed_name, 'success', tmdb_id, media_type,
-                        target_cid or '', category_path or '', 'local')
+            category_path or '', 'local')
 
             if auto_scrape:
                 _scrape_file(target_path)
