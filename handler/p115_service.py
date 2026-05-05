@@ -1501,17 +1501,17 @@ class SmartOrganizer(P115MediaAnalyzerMixin):
             return {}
 
     def _match_rule(self, rule):
-    """
-    规则匹配逻辑 (支持 AND / OR 复合匹配)
-    """
-    if not self.raw_metadata: return False
-
-    # ==========================================
-    # 1. 绝对前置过滤条件 (必须满足，无视 AND/OR)
-    # ==========================================
-    # 媒体类型 (电影/剧集) 是硬性分类，必须优先满足
-    if rule.get('media_type') and rule['media_type'] != 'all':
-        if rule['media_type'] != self.media_type: return False
+        """
+        规则匹配逻辑 (支持 AND / OR 复合匹配)
+        """
+        if not self.raw_metadata: return False
+ 
+        # ==========================================
+        # 1. 绝对前置过滤条件 (必须满足，无视 AND/OR)
+        # ==========================================
+        # 媒体类型 (电影/剧集) 是硬性分类，必须优先满足
+        if rule.get('media_type') and rule['media_type'] != 'all':
+            if rule['media_type'] != self.media_type: return False
 
     # ★★★ 核心重构：追剧状态的主动判定与分季隔离 ★★★
     if rule.get('watching_status') == 'watching' and self.media_type == 'tv':
