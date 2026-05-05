@@ -28,38 +28,11 @@
             <n-button type="primary" @click="startOrganize" :loading="organizing" size="small">
               <template #icon><n-icon :component="FlashOutline" /></template>
               立即整理
-            </n-button>
-          </n-space>
-        </n-space>
-      </template>
-
-      <n-space style="margin-bottom: 20px;" align="center" justify="space-between">
-        <n-space>
-          <n-input v-model:value="searchQuery" placeholder="搜索原文件名..." clearable @keyup.enter="fetchRecords" @clear="fetchRecords" style="width: 280px;">
-            <template #prefix><n-icon :component="SearchOutline" /></template>
-          </n-input>
-          <n-select v-model:value="statusFilter" :options="statusOptions" style="width: 120px;" @update:value="fetchRecords" />
-        </n-space>
-        <n-button type="primary" secondary @click="fetchRecords">
-          <template #icon><n-icon :component="RefreshOutline" /></template>
-          刷新
-        </n-button>
-      </n-space>
-
-      <n-data-table
-        :columns="columns"
-        :data="records"
-        :loading="loading"
-        :pagination="paginationReactive"
-        :bordered="false"
-        striped
-        size="small"
-        :row-key="row => row.id"
-      />
-    </n-card>
-
-    <LocalOrganizeConfigModal v-model:show="showConfigModal" @saved="onConfigSaved" />
-  </n-layout>
+            <n-button @click="ruleManagerRef.open()">分类规则</n-button>  
+            <n-button @click="renameConfigRef.open()">重命名配置</n-button>  
+  
+            <LocalRuleManagerModal ref="ruleManagerRef" />  
+            <LocalRenameConfigModal ref="renameConfigRef" />
 </template>
 
 <script setup>
