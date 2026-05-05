@@ -28,6 +28,7 @@
             <n-button type="primary" @click="startOrganize" :loading="organizing" size="small">
               <template #icon><n-icon :component="FlashOutline" /></template>
               立即整理
+            </n-button> 
             <n-button @click="ruleManagerRef.open()">分类规则</n-button>  
             <n-button @click="renameConfigRef.open()">重命名配置</n-button>  
   
